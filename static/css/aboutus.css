@@ -1,0 +1,169 @@
+/* Global Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Arial', sans-serif;
+}
+
+body {
+  background-color: #ffffff;
+  color: #000000;
+  line-height: 1.6;
+}
+
+/* Container */
+.about-container {
+  max-width: 1200px;
+  margin: 120px auto 60px;
+  padding: 20px;
+  text-align: center;
+}
+
+.about-container h1 {
+  font-size: 2.7em;
+  margin-bottom: 35px;
+  color: #111;
+}
+
+/* Highlight Text */
+.highlight {
+  color: #000000;
+  font-weight: bold;
+}
+
+/* About Section */
+.about-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+  margin-bottom: 80px;
+  text-align: left;
+}
+
+/* Image Styling */
+.about-content img {
+  width: 38%;
+  max-height: 320px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s ease;
+}
+
+.about-content img:hover {
+  transform: scale(1.03);
+}
+
+/* Text Block */
+.about-content p,
+.about-content ul {
+  width: 60%;
+  font-size: 1.25rem;
+  line-height: 2;
+  color: #222;
+}
+
+/* List Styling */
+.about-content ul {
+  padding-left: 0;
+}
+
+.about-content ul li {
+  font-size: 1.1em;
+  margin-bottom: 12px;
+  position: relative;
+  padding-left: 28px;
+  list-style: none;
+}
+
+.about-content ul li::before {
+  content: "✔";
+  color: #000000;
+  position: absolute;
+  left: 0;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+/* Numbers Section */
+.numbers-section {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  flex-wrap: wrap;
+  margin-top: 50px;
+}
+
+.number-card {
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  padding: 25px 30px;
+  width: 260px;
+  text-align: center;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.number-card:hover {
+  transform: translateY(-5px);
+}
+
+.number-card img {
+  width: 100px;
+  height: auto;
+  margin-bottom: 10px;
+  object-fit: contain;
+  filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.number-card .emoji {
+  font-size: 50px;
+  margin-bottom: 10px;
+}
+
+.number-card h3 {
+  font-size: 1.2em;
+  margin-bottom: 8px;
+  color: #111;
+}
+
+.number-card a {
+  text-decoration: none;
+  color: #0073e6;
+  font-size: 0.95em;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .about-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .about-content img,
+  .about-content p,
+  .about-content ul {
+    width: 100%;
+    max-height: none;
+  }
+
+  .about-content p,
+  .about-content ul {
+    font-size: 1.05rem;
+    text-align: justify;
+  }
+
+  .number-card {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .number-card img {
+    width: 80px;
+  }
+}
+.about-content.reverse {
+  flex-direction: row-reverse;
+}

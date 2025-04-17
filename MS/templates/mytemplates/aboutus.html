@@ -1,0 +1,54 @@
+{% extends 'mytemplates/index.html' %}
+{% load static %}
+
+{% block content %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
+<link rel="stylesheet" type="text/css" href="{% static 'css/aboutus.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+<section class="about-container">
+    <h1 data-aos="fade-down">About Platform</h1>
+    <div class="about-content" data-aos="fade-right">
+        <p><strong>Platform</strong> is a Nepali fashion brand committed to providing modern, stylish, and affordable clothing for everyone. We focus on high-quality materials, trendy designs, and budget-friendly prices to make fashion accessible to all.</p>
+        <img src="{% static 'images/manufacturing.jpg' %}" alt="Team Photo">
+    </div>
+
+    <!-- Our Mission Section -->
+    <h1 data-aos="fade-down">Our Mission</h1>
+    <div class="about-content " data-aos="fade-left">
+        <img src="{% static 'images/store1.jpg' %}" alt="Store Interior">
+        <p><strong>We believe</strong> not just in growing bigger, but in growing better. And growing better means aligning the success of your own style with affordability, comfort, and confidence. Win-win!</p>
+    </div>
+
+    <!-- Our Story Section -->
+    <h1 data-aos="fade-down">Our Story</h1>
+    <div class="about-content" data-aos="fade-right">
+        <p><strong>Founded</strong> with a vision to blend local culture and modern fashion, Platform has become a go-to for youth and trendsetters in Nepal. From a humble start in Kathmandu to becoming a beloved name in every wardrobe, our journey is stitched with love and style.</p>
+        <img src="{% static 'images/golo.png' %}" alt="Founders Image">
+    </div>
+
+    <!-- Numbers Section -->
+    <h1 data-aos="fade-down">"Platform not only a brand but revolution"</h1>
+    <div class="numbers-section" data-aos="zoom-in">
+        <div class="number-card">
+            <div class="emoji">🏬</div>
+            <h3>Store at Baluwatar</h3>
+        </div>
+        <div class="number-card">
+            <div class="emoji">
+                <img src="{% static 'images/NpMap.png' %}" alt="Nepal Map">
+            </div>
+            <h3>Available Nationwide</h3>
+        </div>
+        <div class="number-card">
+            <div class="emoji">👥</div>
+            <h3>20,000+ Customers</h3>
+        </div>
+    </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+<script>
+    AOS.init({ duration: 1000, once: true });
+</script>
+{% endblock %}

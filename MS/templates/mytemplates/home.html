@@ -1,0 +1,57 @@
+{% extends 'mytemplates/index.html' %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<link rel="stylesheet" type="text/css" href="{% static 'css/home.css' %}">
+
+<!-- Hero Section -->
+<div class="container">
+  <h1 class="animated-heading">Platform Nepal</h1>
+  <h2 class="animated-heading">Delivers the best product in K-Town.</h2>
+
+  <video class="small-video" autoplay muted loop>
+    <source src="{% static 'videos/platform1.mp4' %}" type="video/mp4">
+  </video>
+  <video class="small-video" autoplay muted loop>
+    <source src="{% static 'videos/platform2.mp4' %}" type="video/mp4">
+  </video>
+  <video class="small-video" autoplay muted loop>
+    <source src="{% static 'videos/platform4.mp4' %}" type="video/mp4">
+  </video>
+</div>
+
+<!-- Gallery Section -->
+<section class="gallery-section">
+  <h2 class="gallery-heading animate-on-scroll">Collections</h2>
+  <div class="gallery-grid">
+    <img src="{% static 'images/Blacktee.jpg' %}" alt="Product" class="animate-on-scroll">
+    <img src="{% static 'images/EDtee.jpg' %}" alt="Product" class="animate-on-scroll">
+    <img src="{% static 'images/Tigertee.jpg' %}" alt="Product" class="animate-on-scroll">
+    <img src="{% static 'images/Elephant.jpg' %}" alt="Product" class="animate-on-scroll">
+    <img src="{% static 'images/login.jpg' %}" alt="Product" class="animate-on-scroll">
+    <img src="{% static 'images/BSuede.jpg' %}" alt="Product" class="animate-on-scroll">
+    <img src="{% static 'images/GreySuede.jpg' %}" alt="Product" class="animate-on-scroll">
+    <img src="{% static 'images/pink.jpg' %}" alt="Product" class="animate-on-scroll">
+    <img src="{% static 'images/browntee.jpg' %}" alt="Product" class="animate-on-scroll">
+    <img src="{% static 'images/RedSuede.jpg' %}" alt="Product" class="animate-on-scroll">
+  </div>
+</section>
+
+{% endblock %}
+
+<script>
+  // Intersection Observer
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('animate-visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  });
+
+  document.querySelectorAll('.animate-on-scroll').forEach(el => {
+    observer.observe(el);
+  });
+</script>

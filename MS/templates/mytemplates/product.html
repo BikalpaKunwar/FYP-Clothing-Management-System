@@ -1,0 +1,331 @@
+{% extends 'mytemplates/index.html' %}
+{% load static %}
+{% block content %}
+
+<!-- ✅ Styles -->
+<link rel="stylesheet" href="{% static 'css/product.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+<!-- ✅ Filter Icon -->
+<!-- ✅ Filter Toggle Button (non-fixed) -->
+<div class="filter-toggle-wrapper">
+  <button id="filterIcon" class="filter-toggle-btn" onclick="toggleFilter()">
+    <img src="{% static 'images/filter.png' %}" alt="Filter Icon" class="filter-icon-small">
+    <span class="filter-label">Filter</span>
+  </button>
+</div>
+
+
+<!-- ✅ Filter Sidebar -->
+<div class="filter-sidebar" id="filterSidebar">
+  <button class="filter-close" onclick="closeFilter()">×</button>
+  <h5>Filter By</h5>
+  <form id="filterForm">
+    <div class="filter-section">
+      <label><span>Hoodie</span><input type="checkbox" name="category" value="hoodie"></label>
+      <label><span>T-Shirt</span><input type="checkbox" name="category" value="tshirt"></label>
+      <label><span>Trouser</span><input type="checkbox" name="category" value="trouser"></label>
+      <label><span>Sweatshirt</span><input type="checkbox" name="category" value="sweatshirt"></label>
+    </div>
+
+
+    <div class="filter-section mt-3">
+      <label for="sort_by">Sort By:</label>
+      <select id="sort_by" class="form-select mt-1">
+        <option value="">-- Select --</option>
+        <option value="price_asc">Price: Low to High</option>
+        <option value="price_desc">Price: High to Low</option>
+        <option value="alpha_asc">Alphabetical (A-Z)</option>
+        <option value="alpha_desc">Alphabetical (Z-A)</option>
+      </select>
+    </div>
+
+    <div class="filter-section mt-3">
+      <label>Min Price:</label>
+      <input type="number" name="min_price" class="form-control mb-2">
+      <label>Max Price:</label>
+      <input type="number" name="max_price" class="form-control mb-2">
+    </div>
+
+    <button type="submit" class="btn btn-dark w-100 mt-2">Apply</button>
+  </form>
+</div>
+
+<!-- ✅ Product Grid -->
+<div class="product-container" id="productContainer">
+  {% for product in products %}
+  <div class="product-item"
+       data-name="{{ product.product_name|lower }}"
+       data-price="{{ product.price }}"
+       data-category="{{ product.category|lower }}">
+        <div class="product-box" onclick="openProductDetail(
+          '{{ product.product_name|escapejs }}',
+          '{{ product.price }}',
+          `{{ product.description|default:"No description provided"|escapejs }}`,
+          '{% if product.image %}{{ product.image.url }}{% else %}{% static "images/default-product.jpg" %}{% endif %}',
+          '{% url "add_to_wishlist" product.id %}',
+          '{% url "add_to_cart" product.id %}'
+        )">
+      {% if product.image %}
+        <img src="{{ product.image.url }}" alt="{{ product.product_name }}">
+      {% else %}
+        <img src="{% static 'images/default-product.jpg' %}" alt="No Image Available">
+      {% endif %}
+
+      <div class="product-meta">
+        <p class="fw-semibold">{{ product.product_name }}</p>
+        <p><strong>Rs. {{ product.price }}</strong></p>
+      </div>
+
+      <div class="product-actions">
+        <a href="{% url 'add_to_wishlist' product.id %}" title="Add to Wishlist"><i class="fas fa-heart"></i></a>
+        <a href="{% url 'add_to_cart' product.id %}" title="Add to Cart"><i class="fas fa-shopping-cart"></i></a>
+      </div>
+
+      <button class="buy-now-btn"
+              onclick="openBuyNowModal('{{ product.id }}', '{{ product.product_name }}', '{{ product.price }}')">
+        Buy Now
+      </button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- ✅ Buy Now Modal -->
+<div class="modal fade" id="buyNowModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content p-4 shadow rounded-4">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold">🛍️ Buy Now</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{% url 'buy_now_checkout' %}">
+        {% csrf_token %}
+        <input type="hidden" name="product_id" id="modalProductId">
+        <input type="hidden" id="modalBasePrice">
+        <div class="modal-body">
+          <p><strong id="modalProductName"></strong> - Rs. <span id="modalProductPrice"></span></p>
+
+          <label>Quantity:</label>
+          <input type="number" class="form-control mb-2" name="quantity" id="modalQuantity" min="1" value="1" required>
+
+          <label>Size:</label>
+          <select name="size" class="form-control mb-2" required>
+            <option value="S">S</option><option value="M">M</option><option value="L">L</option><option value="XL">XL</option>
+          </select>
+
+          <label>Full Name:</label>
+          <input type="text" class="form-control mb-2" name="name" required>
+
+          <label>Phone:</label>
+          <input type="tel" class="form-control mb-2" name="phone" required>
+
+          <label>Address:</label>
+          <textarea class="form-control mb-2" name="address" required></textarea>
+
+          <label>Payment Method:</label><br>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="payment_method" value="COD" checked>
+            <label class="form-check-label">Cash on delivery</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="payment_method" value="eSewa">
+            <label class="form-check-label">eSewa</label>
+          </div>
+
+          <p class="fw-bold text-success mt-3">Total: Rs. <span id="modalTotalAmount"></span></p>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-success w-100 fw-bold" onclick="showConfirmation()">🛒 Place Order</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ Product Detail Modal -->
+<div class="modal fade" id="productDetailModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content detail-modal-content">
+      <div class="d-flex flex-md-row flex-column align-items-center">
+        
+        <!-- ✅ Image -->
+        <div class="product-detail-image text-center p-3">
+          <img id="detailImage" src="" class="img-fluid shadow-sm" alt="Product Image" />
+        </div>
+
+        <!-- ✅ Info -->
+        <div class="product-detail-text p-4">
+          <h5 id="detailName" class="fw-bold text-uppercase mb-1"></h5>
+          <h6 id="detailPrice" class="text-dark mb-3"></h6>
+          <p id="detailDescription" class="text-muted" style="line-height: 1.6;"></p>
+
+            <div class="icon-buttons d-flex gap-3 align-items-center mb-3">
+              <a id="detailWishlist" title="Add to Wishlist"><i class="fas fa-heart"></i></a>
+              <a id="detailCart" title="Add to Cart"><i class="fas fa-shopping-cart"></i></a>
+            </div>
+
+            <button class="btn btn-dark px-4 fw-bold" onclick="triggerBuyNowFromDetail()">BUY NOW</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+    
+    
+<!-- ✅ Confirmation Modal -->
+<div class="modal fade" id="confirmOrderModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+    <div class="modal-content p-4 shadow rounded-4">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title">Confirm Order</h5>
+      </div>
+      <div class="modal-body text-center pt-1">
+        <p>Are you sure you want to place this order?</p>
+        <div class="d-flex justify-content-center gap-3">
+          <button class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-success px-4" onclick="finalizeOrder()">Yes, Place Order</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ JavaScript -->
+<script>
+  let buyNowForm = null;
+  let basePrice = 0;
+
+  function formatPrice(num) {
+    return parseFloat(num).toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  function openBuyNowModal(productId, name, price) {
+    const modal = new bootstrap.Modal(document.getElementById('buyNowModal'));
+    document.getElementById('modalProductId').value = productId;
+    document.getElementById('modalProductName').textContent = name;
+    document.getElementById('modalBasePrice').value = price;
+    document.getElementById('modalQuantity').value = 1;
+    basePrice = parseFloat(price);
+    document.getElementById('modalProductPrice').textContent = formatPrice(basePrice);
+    document.getElementById('modalTotalAmount').textContent = formatPrice(basePrice);
+    modal.show();
+  }
+
+  function showConfirmation() {
+    buyNowForm = document.querySelector("#buyNowModal form");
+    new bootstrap.Modal(document.getElementById('confirmOrderModal')).show();
+  }
+
+  function finalizeOrder() {
+    bootstrap.Modal.getInstance(document.getElementById('confirmOrderModal')).hide();
+    bootstrap.Modal.getInstance(document.getElementById('buyNowModal')).hide();
+    setTimeout(() => {
+      buyNowForm.submit();
+    }, 500);
+  }
+
+  function closeFilter() {
+    document.getElementById("filterSidebar").classList.remove("active");
+    document.getElementById("filterIcon").style.display = "block";
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById("filterIcon").onclick = () => {
+      document.getElementById("filterSidebar").classList.add("active");
+      document.getElementById("filterIcon").style.display = "none";
+    };
+
+    const quantityInput = document.getElementById('modalQuantity');
+    quantityInput.addEventListener('input', () => {
+      const qty = parseInt(quantityInput.value) || 1;
+      const total = basePrice * qty;
+      document.getElementById('modalTotalAmount').textContent = formatPrice(total);
+    });
+
+    document.getElementById("filterForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      applyFilters();
+    });
+
+    document.getElementById("sort_by").addEventListener("change", applyFilters);
+
+    function applyFilters() {
+      const categories = Array.from(document.querySelectorAll("input[name='category']:checked")).map(cb => cb.value);
+      const minPrice = parseFloat(document.querySelector("input[name='min_price']").value) || 0;
+      const maxPrice = parseFloat(document.querySelector("input[name='max_price']").value) || Infinity;
+      const sortBy = document.getElementById("sort_by").value;
+      const products = Array.from(document.querySelectorAll(".product-item"));
+
+      products.forEach(p => {
+        const price = parseFloat(p.dataset.price);
+        const category = p.dataset.category;
+        const show = (!categories.length || categories.includes(category)) && price >= minPrice && price <= maxPrice;
+        p.style.display = show ? "flex" : "none";
+      });
+
+      if (sortBy) {
+        const container = document.getElementById("productContainer");
+        const visible = products.filter(p => p.style.display !== "none");
+        visible.sort((a, b) => {
+          if (sortBy === "price_asc") return a.dataset.price - b.dataset.price;
+          if (sortBy === "price_desc") return b.dataset.price - a.dataset.price;
+          if (sortBy === "alpha_asc") return a.dataset.name.localeCompare(b.dataset.name);
+          if (sortBy === "alpha_desc") return b.dataset.name.localeCompare(a.dataset.name);
+        });
+        visible.forEach(p => container.appendChild(p));
+      }
+    }
+  });
+  
+      function openProductDetail(name, price, desc, imageUrl, wishlistUrl, cartUrl) {
+      document.getElementById('detailName').textContent = name;
+      document.getElementById('detailPrice').textContent = "Rs. " + parseFloat(price).toFixed(2);
+      document.getElementById('detailDescription').textContent = desc;
+      document.getElementById('detailImage').src = imageUrl;
+      document.getElementById('detailWishlist').href = wishlistUrl;
+      document.getElementById('detailCart').href = cartUrl;
+    
+      new bootstrap.Modal(document.getElementById('productDetailModal')).show();
+}
+  
+</script>
+    
+    
+<script>
+  let detailProductId = '';
+  let detailProductName = '';
+  let detailProductPrice = '';
+
+  function openProductDetail(name, price, description, imageUrl, wishlistUrl, cartUrl, productId) {
+    document.getElementById("detailName").textContent = name;
+    document.getElementById("detailPrice").textContent = `Rs. ${parseFloat(price).toLocaleString("en-IN")}`;
+    document.getElementById("detailDescription").textContent = description;
+    document.getElementById("detailImage").src = imageUrl;
+    document.getElementById("detailWishlist").href = wishlistUrl;
+    document.getElementById("detailCart").href = cartUrl;
+
+    // Save for Buy Now use
+    detailProductId = productId;
+    detailProductName = name;
+    detailProductPrice = price;
+
+    const detailModal = new bootstrap.Modal(document.getElementById('productDetailModal'));
+    detailModal.show();
+  }
+
+  function triggerBuyNowFromDetail() {
+    const detailModalInstance = bootstrap.Modal.getInstance(document.getElementById('productDetailModal'));
+    if (detailModalInstance) detailModalInstance.hide();
+
+    // Trigger main Buy Now modal
+    openBuyNowModal(detailProductId, detailProductName, detailProductPrice);
+  }
+</script>
+
+{% endblock %}
