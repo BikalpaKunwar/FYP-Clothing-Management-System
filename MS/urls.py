@@ -55,4 +55,10 @@ path('dashboard/users/', views.user_list_view, name='admin_users'),
 path('dashboard/users/create/', views.user_create_view, name='create_user'),
 path('dashboard/users/edit/<int:pk>/', views.user_edit_view, name='edit_user'),
 path('dashboard/users/delete/<int:user_id>/', views.delete_user, name='delete_user'),
+
+
+path("forgotpassword", views.forgotpassword, name="forgotpassword"),
+
+    # required for reset to work after email
+path('reset/<uidb64>/<token>/', views.custom_reset_password_confirm, name='password_reset_confirm'),
 ]

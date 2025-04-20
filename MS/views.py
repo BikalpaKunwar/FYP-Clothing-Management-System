@@ -1,15 +1,23 @@
+from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
+from django.urls import reverse_lazy
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.db.models import Count
 from django.contrib.auth import get_user_model
 from decimal import Decimal
-
+from django.contrib.auth.models import User as DjangoUser
 from .forms import CustomUserRegistrationForm, LoginForm, ProductForm
 from .models import Product, CartItem, WishlistItem, Order
+
+
 
 User = get_user_model()
 
@@ -47,7 +55,51 @@ def contact(request):
 
 
 def forgotpassword(request):
-    return render(request, 'mytemplates/forgotpassword.html')
+    if request.method == 'POST':
+        form = PasswordResetForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email']
+            users = User.objects.filter(email=email)
+            if users.exists():
+                for user in users:
+                    subject = "Password Reset - Bonapapa"
+                    uid = urlsafe_base64_encode(force_bytes(user.pk))
+                    token = default_token_generator.make_token(user)
+                    reset_url = request.build_absolute_uri(
+                        reverse_lazy('password_reset_confirm', kwargs={'uidb64': uid, 'token': token})
+                    )
+                    message = f"Hi {user.username},\n\nClick the link below to reset your password:\n{reset_url}"
+                    send_mail(subject, message, 'noreply@bonapapa.com', [user.email])
+                messages.success(request, "Password reset link sent! Please check your email.")
+            else:
+                messages.error(request, "No user found with that email.")
+    else:
+        form = PasswordResetForm()
+    return render(request, 'mytemplates/forgotpassword.html', {'form': form})
+
+
+def custom_reset_password_confirm(request, uidb64, token):
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = DjangoUser.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, DjangoUser.DoesNotExist):
+        user = None
+
+    if user and default_token_generator.check_token(user, token):
+        if request.method == 'POST':
+            form = SetPasswordForm(user, request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Your password has been reset successfully.')
+                return redirect('login')
+        else:
+            form = SetPasswordForm(user)
+        return render(request, 'mytemplates/password_reset_form.html', {'form': form})
+    else:
+        messages.error(request, 'The reset link is invalid or has expired.')
+        return redirect('forgotpassword')
+
+
 
 def bidding(request):
     return render(request, 'mytemplates/bidding.html')
