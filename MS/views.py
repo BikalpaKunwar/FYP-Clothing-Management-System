@@ -15,9 +15,7 @@ from django.contrib.auth import get_user_model
 from decimal import Decimal
 from django.contrib.auth.models import User as DjangoUser
 from .forms import CustomUserRegistrationForm, LoginForm, ProductForm
-from .models import Product, CartItem, WishlistItem, Order
-
-
+from .models import Product, CartItem, WishlistItem, Order, Rating
 
 User = get_user_model()
 
@@ -531,3 +529,30 @@ def edit_profile_view(request):
     else:
         form = CustomUserUpdateForm(instance=request.user)
     return render(request, 'mytemplates/edit_profile.html', {'form': form})
+
+
+from django.contrib import messages
+
+def product_detail_view(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    related_products = Product.objects.filter(category=product.category).exclude(id=product.id)[:4]
+
+    if request.method == 'POST':
+        rating_val = request.POST.get('rating')
+        review_text = request.POST.get('review')
+
+        if rating_val and review_text:
+            Rating.objects.create(
+                product=product,
+                user=request.user.username,
+                rating=int(rating_val),
+                review=review_text
+            )
+            messages.success(request, 'Thank you for your review!')
+
+        return redirect('product_detail', product_id=product.id)
+
+    return render(request, 'mytemplates/product_detail.html', {
+        'product': product,
+        'related_products': related_products
+    })

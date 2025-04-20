@@ -61,4 +61,8 @@ path("forgotpassword", views.forgotpassword, name="forgotpassword"),
 
     # required for reset to work after email
 path('reset/<uidb64>/<token>/', views.custom_reset_password_confirm, name='password_reset_confirm'),
+
+
+path('product/<int:product_id>/', views.product_detail_view, name='product_detail'),
+
 ]

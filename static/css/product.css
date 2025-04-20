@@ -54,6 +54,12 @@ body {
   border-radius: 8px;
   margin-bottom: 15px;
 }
+/* ✅ Remove underline and blue color from product links */
+.product-box a {
+  text-decoration: none;
+  color: inherit;
+}
+
 
 /* Product Info */
 .product-meta p {

@@ -54,40 +54,39 @@
 <!-- ✅ Product Grid -->
 <div class="product-container" id="productContainer">
   {% for product in products %}
-  <div class="product-item"
-       data-name="{{ product.product_name|lower }}"
-       data-price="{{ product.price }}"
-       data-category="{{ product.category|lower }}">
-        <div class="product-box" onclick="openProductDetail(
-          '{{ product.product_name|escapejs }}',
-          '{{ product.price }}',
-          `{{ product.description|default:"No description provided"|escapejs }}`,
-          '{% if product.image %}{{ product.image.url }}{% else %}{% static "images/default-product.jpg" %}{% endif %}',
-          '{% url "add_to_wishlist" product.id %}',
-          '{% url "add_to_cart" product.id %}'
-        )">
-      {% if product.image %}
-        <img src="{{ product.image.url }}" alt="{{ product.product_name }}">
-      {% else %}
-        <img src="{% static 'images/default-product.jpg' %}" alt="No Image Available">
-      {% endif %}
+    {% if product.id %}
+      <div class="product-item"
+           data-name="{{ product.product_name|lower }}"
+           data-price="{{ product.price }}"
+           data-category="{{ product.category|lower }}">
 
-      <div class="product-meta">
-        <p class="fw-semibold">{{ product.product_name }}</p>
-        <p><strong>Rs. {{ product.price }}</strong></p>
+        <!-- ✅ Entire card clickable -->
+        <a href="{% url 'product_detail' product.id %}" class="product-box-link">
+          <div class="product-box">
+            {% if product.image %}
+              <img src="{{ product.image.url }}" alt="{{ product.product_name }}">
+            {% else %}
+              <img src="{% static 'images/default-product.jpg' %}" alt="No Image Available">
+            {% endif %}
+
+            <div class="product-meta">
+              <p class="fw-semibold">{{ product.product_name }}</p>
+              <p><strong>Rs. {{ product.price }}</strong></p>
+            </div>
+
+            <div class="product-actions" onclick="event.stopPropagation(); event.preventDefault();">
+              <a href="{% url 'add_to_wishlist' product.id %}" title="Add to Wishlist"><i class="fas fa-heart"></i></a>
+              <a href="{% url 'add_to_cart' product.id %}" title="Add to Cart"><i class="fas fa-shopping-cart"></i></a>
+            </div>
+
+            <button class="buy-now-btn"
+                    onclick="event.preventDefault(); openBuyNowModal('{{ product.id }}', '{{ product.product_name }}', '{{ product.price }}')">
+              Buy Now
+            </button>
+          </div>
+        </a>
       </div>
-
-      <div class="product-actions">
-        <a href="{% url 'add_to_wishlist' product.id %}" title="Add to Wishlist"><i class="fas fa-heart"></i></a>
-        <a href="{% url 'add_to_cart' product.id %}" title="Add to Cart"><i class="fas fa-shopping-cart"></i></a>
-      </div>
-
-      <button class="buy-now-btn"
-              onclick="openBuyNowModal('{{ product.id }}', '{{ product.product_name }}', '{{ product.price }}')">
-        Buy Now
-      </button>
-    </div>
-  </div>
+    {% endif %}
   {% endfor %}
 </div>
 
@@ -143,34 +142,7 @@
   </div>
 </div>
 
-<!-- ✅ Product Detail Modal -->
-<div class="modal fade" id="productDetailModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content detail-modal-content">
-      <div class="d-flex flex-md-row flex-column align-items-center">
-        
-        <!-- ✅ Image -->
-        <div class="product-detail-image text-center p-3">
-          <img id="detailImage" src="" class="img-fluid shadow-sm" alt="Product Image" />
-        </div>
 
-        <!-- ✅ Info -->
-        <div class="product-detail-text p-4">
-          <h5 id="detailName" class="fw-bold text-uppercase mb-1"></h5>
-          <h6 id="detailPrice" class="text-dark mb-3"></h6>
-          <p id="detailDescription" class="text-muted" style="line-height: 1.6;"></p>
-
-            <div class="icon-buttons d-flex gap-3 align-items-center mb-3">
-              <a id="detailWishlist" title="Add to Wishlist"><i class="fas fa-heart"></i></a>
-              <a id="detailCart" title="Add to Cart"><i class="fas fa-shopping-cart"></i></a>
-            </div>
-
-            <button class="btn btn-dark px-4 fw-bold" onclick="triggerBuyNowFromDetail()">BUY NOW</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
 
     
