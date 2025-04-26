@@ -54,12 +54,11 @@ body {
   border-radius: 8px;
   margin-bottom: 15px;
 }
-/* ✅ Remove underline and blue color from product links */
+
 .product-box a {
   text-decoration: none;
   color: inherit;
 }
-
 
 /* Product Info */
 .product-meta p {
@@ -149,7 +148,6 @@ body {
   font-weight: bold;  /* ✅ BOLD */
   color: #333;
 }
-
 
 /* ✅ Filter Sidebar */
 .filter-sidebar {
@@ -271,11 +269,48 @@ body {
   min-width: 300px;
 }
 
-.toast-success {
-  background: linear-gradient(to right, #38ef7d, #11998e);
+.toast {
+  background: #28a745;
   color: white;
   font-weight: 500;
   border-radius: 8px;
+  padding: 12px 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+  animation: fadein 0.4s, fadeout 0.5s 2.5s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.toast button {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+/* ✅ Toast animations */
+@keyframes fadein {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeout {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 /* ✅ Responsive */
@@ -394,8 +429,6 @@ body {
   color: #28a745; /* Optional hover color */
 }
 
-
-
 /* Add this to your existing CSS file */
 
 .icon-btn {
@@ -421,3 +454,4 @@ body {
   background-color: #28a745;
   transform: scale(1.05);
 }
+

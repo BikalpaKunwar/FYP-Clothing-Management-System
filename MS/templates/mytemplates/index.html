@@ -16,9 +16,8 @@
 <body>
 
   <!-- ✅ Toast Notification -->
-{% if request.path != '/cart/' %}
-  {% if messages %}
-    <div class="position-toast-center">
+  <div id="toast-container" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px;">
+    {% if messages %}
       {% for message in messages %}
         <div class="toast show align-items-center 
           {% if message.tags == 'error' %}toast-error
@@ -31,10 +30,8 @@
           </div>
         </div>
       {% endfor %}
-    </div>
-  {% endif %}
-{% endif %}
-
+    {% endif %}
+  </div>
 
   <!-- ✅ Navigation -->
   {% include 'mytemplates/nav.html' %}

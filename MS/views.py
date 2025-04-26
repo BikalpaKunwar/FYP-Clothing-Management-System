@@ -272,22 +272,38 @@ def wishlist_view(request):
     wishlist_items = WishlistItem.objects.filter(user=request.user)
     return render(request, 'mytemplates/wishlist.html', {'wishlist_items': wishlist_items})
 
+from django.http import JsonResponse
+
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from .models import Product, WishlistItem
+
 @login_required
 def add_to_wishlist(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     exists = WishlistItem.objects.filter(user=request.user, product=product).exists()
+
     if exists:
-        messages.warning(request, f"{product.product_name} is already in your wishlist.")
+        return JsonResponse({
+            'status': 'exists',
+            'message': f"{product.product_name} is already in your wishlist."
+        })
     else:
         WishlistItem.objects.create(user=request.user, product=product)
-        messages.success(request, f"{product.product_name} added to your wishlist!")
-    return redirect('product')
+        return JsonResponse({
+            'status': 'added',
+            'message': f"{product.product_name} added to your wishlist!"
+        })
+
 
 @login_required
 def remove_wishlist_item(request, item_id):
     item = get_object_or_404(WishlistItem, id=item_id, user=request.user)
     item.delete()
     return redirect('wishlist')
+
+
 
 
 # ---------- ORDER ----------
@@ -308,14 +324,28 @@ def buy_now_checkout(request):
             address = request.POST.get('address')
             payment_method = request.POST.get('payment_method')
 
+            # Limit quantity to 5
+            if quantity > 5:
+                messages.error(request, "You cannot order more than 5 units of a product.")
+                return redirect('product')
+
             product = get_object_or_404(Product, id=product_id)
 
             if quantity < 1:
                 messages.error(request, "Quantity must be at least 1.")
                 return redirect('product')
 
+            # Ensure there's enough stock
+            if product.quantity >= quantity:
+                product.quantity -= quantity  # Decrease the quantity
+                product.save()  # Save the updated product quantity
+            else:
+                messages.error(request, f"Not enough stock for {product.product_name}.")
+                return redirect('product')
+
             total_price = product.price * quantity
 
+            # Create the order
             Order.objects.create(
                 user=request.user,              # ✅ FK to authenticated user
                 product=product,
@@ -342,16 +372,24 @@ def user_orders(request):
 
 
 
+from django.contrib import messages
+from django.shortcuts import redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from .models import Product, CartItem, WishlistItem
+
 @login_required
 def add_to_cart(request, product_id):
     product = get_object_or_404(Product, pk=product_id)
     cart_item, created = CartItem.objects.get_or_create(user=request.user, product=product)
+
     if not created:
         cart_item.quantity += 1
         cart_item.save()
-    messages.success(request, f"{product.product_name} added to cart successfully!")
-    return redirect('product')
+        messages.warning(request, f"Added another {product.product_name} to your cart!")
+    else:
+        messages.success(request, f"{product.product_name} added to cart!")
 
+    return redirect('product')  # or wherever your product page is
 @login_required
 def checkout(request):
     if request.method == 'POST':
@@ -366,15 +404,41 @@ def checkout(request):
             return redirect('cart')
 
         for item in cart_items:
+            # Fetch the quantity for each cart item dynamically from the form
+            quantity = request.POST.get(f"quantity_{item.id}")
+            if quantity is None or quantity == '':
+                quantity = 1  # Default to 1 if quantity is not provided or invalid
+            else:
+                try:
+                    quantity = int(quantity)
+                    if quantity < 1:
+                        raise ValueError("Quantity must be at least 1.")
+                    if quantity > 5:  # Limit to a maximum of 5 units per product
+                        messages.error(request, f"You cannot order more than 5 units of {item.product.product_name}.")
+                        return redirect('cart')
+                except ValueError:
+                    messages.error(request, f"Invalid quantity for {item.product.product_name}")
+                    return redirect('cart')
+
+            # Create the order with the correct quantity
             Order.objects.create(
                 user=request.user,
                 product=item.product,
-                quantity=item.quantity,
-                total_price=item.product.price * item.quantity,
+                quantity=quantity,
+                total_price=item.product.price * quantity,
                 status='pending'
             )
 
-        cart_items.delete()
+            # Decrease the product's quantity after purchase
+            product = item.product
+            if product.quantity >= quantity:
+                product.quantity -= quantity
+                product.save()  # Save the updated product quantity
+            else:
+                messages.error(request, f"Not enough stock for {product.product_name}.")
+                return redirect('cart')
+
+        cart_items.delete()  # Clear the cart after placing the order
         messages.success(request, "Your order has been placed successfully!")
         return redirect('user_orders')
 
@@ -556,3 +620,29 @@ def product_detail_view(request, product_id):
         'product': product,
         'related_products': related_products
     })
+
+
+
+@require_POST
+@login_required
+def apply_coupon(request):
+    code = request.POST.get('coupon_code')
+    if code == 'DISCOUNT10':
+        request.session['discount'] = 10  # store it in session
+        messages.success(request, "🎉 Coupon applied! 10% discount.")
+    else:
+        messages.error(request, "❌ Invalid coupon code.")
+    return redirect('cart')
+
+
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+
+def ajax_login_required(view_func):
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'warning', 'message': 'Please log in to perform this action.'})
+        return view_func(request, *args, **kwargs)
+    return wrapper

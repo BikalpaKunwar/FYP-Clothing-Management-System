@@ -23,13 +23,15 @@ path('cart/update/', views.update_cart, name='update_cart'),
 path('cart/checkout/', views.checkout, name='checkout'),
 path('cart/add/<int:product_id>/', views.add_to_cart, name='add_to_cart'),
 path('cart/remove/<int:item_id>/', views.remove_cart_item, name='remove_cart_item'),
+path('cart/apply-coupon/', views.apply_coupon, name='apply_coupon'),
+
 
 # --- WISHLIST ---
 path('wishlist/', views.wishlist_view, name='wishlist'),
 path('wishlist/add/<int:product_id>/', views.add_to_wishlist, name='add_to_wishlist'),
 path('remove-wishlist/<int:item_id>/', views.remove_wishlist_item, name='remove_wishlist_item'),
 
-# --- BUY NOW / ORDERS ---
+    # --- BUY NOW / ORDERS ---
 path('buy-now-checkout/', views.buy_now_checkout, name='buy_now_checkout'),
 path('orders/', views.user_orders, name='user_orders'),
 path('cancel-order/<int:order_id>/', views.cancel_order, name='cancel_order'),

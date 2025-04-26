@@ -13,28 +13,24 @@
     <div class="cart-items">
       {% for item in cart_items %}
       <div class="cart-item d-flex mb-3 align-items-center border p-3 rounded shadow-sm {% cycle 'bg-white' 'bg-light' %}">
-        <img src="{{ item.product.image.url }}" alt="{{ item.product.product_name }}"
-             style="height: 80px; width: auto; margin-right: 15px;">
+        <img src="{{ item.product.image.url }}" alt="{{ item.product.product_name }}" style="height: 80px; margin-right: 15px;">
         <div class="flex-grow-1">
           <h5>{{ item.product.product_name }}</h5>
           <p>Price: Rs. <span class="item-price">{{ item.product.price }}</span></p>
-
           <label>Quantity:
-            <input type="number" name="quantity_{{ item.id }}" min="1" value="{{ item.quantity }}"
+            <input type="number" name="quantity_{{ item.id }}" min="1" value="{{ item.quantity }}" 
                    class="form-control form-control-sm w-50 quantity-input" data-price="{{ item.product.price }}" required>
           </label>
-
           <label class="ms-3">Size:
             <select name="size_{{ item.id }}" class="form-control form-control-sm w-50" required>
               <option value="">--Select--</option>
-              <option value="S" {% if item.product.size == 'S' %}selected{% endif %}>S</option>
-              <option value="M" {% if item.product.size == 'M' %}selected{% endif %}>M</option>
-              <option value="L" {% if item.product.size == 'L' %}selected{% endif %}>L</option>
-              <option value="XL" {% if item.product.size == 'XL' %}selected{% endif %}>XL</option>
+              <option value="S" {% if item.size == 'S' %}selected{% endif %}>S</option>
+              <option value="M" {% if item.size == 'M' %}selected{% endif %}>M</option>
+              <option value="L" {% if item.size == 'L' %}selected{% endif %}>L</option>
+              <option value="XL" {% if item.size == 'XL' %}selected{% endif %}>XL</option>
             </select>
           </label>
         </div>
-
         <form action="{% url 'remove_cart_item' item.id %}" method="POST">
           {% csrf_token %}
           <button type="submit" class="btn btn-danger btn-sm">Remove</button>
@@ -43,15 +39,32 @@
       {% endfor %}
     </div>
 
-    <div class="summary mt-4 text-end">
-      <h4>Total: Rs. <span id="total-price">{{ total_price|floatformat:2 }}</span></h4>
-      <button type="button" class="btn btn-primary" onclick="handleCartCheckout()">Proceed to Checkout</button>
+    <!-- ✅ Coupon + Summary -->
+    <div class="cart-summary d-flex justify-content-between align-items-end p-4 mt-4 bg-light rounded-4 shadow-sm flex-wrap gap-3">
+      <div class="coupon-form w-100 w-md-50">
+        <label for="coupon_code" class="fw-semibold mb-2 d-block">🎁 Have a Coupon?</label>
+        <div class="d-flex gap-2 flex-wrap">
+          <input type="text" id="coupon_code" name="coupon_code" class="form-control" style="max-width: 300px;" placeholder="Enter code">
+          <button type="submit" formaction="{% url 'apply_coupon' %}" class="btn btn-outline-primary">Apply</button>
+        </div>
+        {% if coupon %}
+        <p class="text-success mt-2">Coupon <strong>{{ coupon.code }}</strong> applied — Rs. {{ coupon.discount_amount }} off!</p>
+        {% endif %}
+      </div>
+
+      <div class="text-end ms-auto">
+        <h4 class="fw-semibold mb-2">Total: Rs. <span id="total-price">{{ total_price|floatformat:2 }}</span></h4>
+        <button type="button" class="btn btn-primary px-4 fw-semibold" onclick="handleCartCheckout()">Proceed to Checkout</button>
+      </div>
     </div>
   </form>
   {% else %}
   <div class="alert alert-info mt-4">Your cart is empty.</div>
   {% endif %}
 </div>
+
+<!-- ✅ Toast Notification -->
+<div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
 
 <!-- ✅ Checkout Modal -->
 <div class="modal fade" id="checkoutModal" tabindex="-1" aria-hidden="true">
@@ -96,7 +109,7 @@
   </div>
 </div>
 
-<!-- ✅ Confirmation Modal -->
+<!-- ✅ Confirm Modal -->
 <div class="modal fade" id="cartConfirmModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
     <div class="modal-content p-4 shadow rounded-4">
@@ -118,27 +131,51 @@
 <script>
   function updateTotal() {
     let total = 0;
-    const quantityInputs = document.querySelectorAll(".quantity-input");
-
-    quantityInputs.forEach(input => {
+    document.querySelectorAll(".quantity-input").forEach(input => {
       const price = parseFloat(input.dataset.price);
-      const quantity = parseInt(input.value);
-      if (!isNaN(price) && !isNaN(quantity) && quantity > 0) {
-        total += price * quantity;
-      }
+      const qty = parseInt(input.value);
+      if (!isNaN(price) && !isNaN(qty)) total += price * qty;
     });
-
     document.getElementById("total-price").innerText = total.toLocaleString("en-IN", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
   }
 
+  function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.style.cssText = `
+      background: ${type === 'success' ? '#28a745' : '#dc3545'};
+      color: white; padding: 10px 20px; margin-bottom: 12px;
+      border-radius: 6px; font-weight: 600;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      animation: fadein 0.4s, fadeout 0.5s 2.5s;
+    `;
+    document.getElementById('toast-container').appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    {% if messages %}
+      {% for message in messages %}
+        showToast("{{ message|escapejs }}", "{{ message.tags }}");
+      {% endfor %}
+    {% endif %}
+    document.querySelectorAll(".quantity-input").forEach(input => input.addEventListener("input", updateTotal));
+    updateTotal();
+  });
+
+  const style = document.createElement('style');
+  style.innerHTML = `@keyframes fadein { from {opacity: 0; transform: translateY(-10px);} to {opacity: 1;} }
+                     @keyframes fadeout { from {opacity: 1;} to {opacity: 0;} }`;
+  document.head.appendChild(style);
+
   function validateSizes() {
     const selects = document.querySelectorAll("select");
     for (let select of selects) {
       if (select.value === "") {
-        alert("Please select a size for all products before proceeding to checkout.");
+        alert("Please select a size for all products.");
         return false;
       }
     }
@@ -147,30 +184,21 @@
 
   function handleCartCheckout() {
     if (validateSizes()) {
-      const modal = new bootstrap.Modal(document.getElementById('checkoutModal'));
-      modal.show();
+      new bootstrap.Modal(document.getElementById('checkoutModal')).show();
     }
   }
 
   function showCartConfirmModal() {
-    const confirmModal = new bootstrap.Modal(document.getElementById('cartConfirmModal'));
-    confirmModal.show();
+    new bootstrap.Modal(document.getElementById('cartConfirmModal')).show();
   }
 
   function finalizeCartOrder() {
     bootstrap.Modal.getInstance(document.getElementById('cartConfirmModal')).hide();
     bootstrap.Modal.getInstance(document.getElementById('checkoutModal')).hide();
-
     setTimeout(() => {
       document.getElementById("cartCheckoutForm").submit();
     }, 500);
   }
-
-  document.querySelectorAll(".quantity-input").forEach(input => {
-    input.addEventListener("input", updateTotal);
-  });
-
-  updateTotal();
 </script>
 
 {% endblock %}
