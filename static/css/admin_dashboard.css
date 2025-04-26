@@ -86,7 +86,7 @@ body {
 .topbar {
   display: flex;
   justify-content: flex-end;
-  align-items: center;
+  align-items: center; /* ✅ center vertically */
   gap: 10px;
   margin-bottom: 30px;
 }
@@ -230,7 +230,7 @@ table tbody tr:nth-child(even) {
 .charts-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 40px;
+  gap: 50px; /* ✅ wider spacing between the chart cards */
   justify-content: center;
   margin-top: 50px;
   margin-bottom: 40px;
@@ -240,17 +240,21 @@ table tbody tr:nth-child(even) {
   background-color: #fff;
   border-radius: 12px;
   padding: 25px;
-  flex: 1 1 400px;
-  max-width: 480px;
-  min-width: 350px;
+  flex: 1 1 300px;
+  max-width: 380px;
+  min-width: 280px;
   box-shadow: 0 6px 16px rgba(0,0,0,0.08);
   text-align: center;
+  height: 450px; /* ✅ fixed height for card */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 canvas {
   max-width: 100% !important;
   width: 100% !important;
-  height: 350px !important;
+  height: 280px !important;
   margin-bottom: 15px;
 }
 
@@ -259,6 +263,11 @@ canvas {
   color: #555;
   margin-top: 15px;
   font-style: italic;
+}
+.order-status-card {
+  flex: 1 1 500px; /* Wider card */
+  max-width: 600px;
+  min-width: 400px;
 }
 
 /* Status Dropdown Style */
@@ -398,4 +407,29 @@ canvas {
 
 .btn-danger:hover {
   background-color: #c82333;
+}
+
+.search-container {
+  position: relative;
+  width: 280px; /* or your desired width */
+  margin-bottom: 20px;
+  float: right;
+}
+
+.search-container input {
+  width: 100%;
+  padding: 10px 40px 10px 15px; /* padding-right for icon */
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.search-container .search-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #888;
+  font-size: 16px;
+  pointer-events: none; /* so clicks don't block typing */
 }

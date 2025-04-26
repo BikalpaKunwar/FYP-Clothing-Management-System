@@ -156,11 +156,20 @@ def register(request):
 def is_admin(user):
     return user.is_superuser or user.is_staff
 
+from django.db.models import Count
+from django.contrib.auth.decorators import user_passes_test
+from django.shortcuts import render
+from django.contrib.auth import get_user_model
+from .models import Product, Order
+
+User = get_user_model()
+
 @user_passes_test(is_admin)
 def admin_dashboard(request):
     user_counts = {
-        'admin': User.objects.filter(is_staff=True).count(),
-        'customer': User.objects.filter(is_staff=False).count()
+        'admin': User.objects.filter(is_superuser=True).count(),
+        'staff': User.objects.filter(is_staff=True, is_superuser=False).count(),
+        'customer': User.objects.filter(is_staff=False, is_superuser=False).count(),
     }
     order_status_counts = Order.objects.values('status').annotate(count=Count('status'))
     category_counts = Product.objects.values('category').annotate(count=Count('category'))
@@ -171,9 +180,10 @@ def admin_dashboard(request):
         'total_orders': Order.objects.count(),
         'user_counts': user_counts,
         'order_status_counts': order_status_counts,
-        'category_counts': category_counts
+        'category_counts': category_counts,
     }
     return render(request, 'mytemplates/admin_dashboard.html', context)
+
 
 @user_passes_test(is_admin)
 def admin_users(request):
