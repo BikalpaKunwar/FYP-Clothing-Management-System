@@ -633,16 +633,7 @@ def product_detail_view(request, product_id):
 
 
 
-@require_POST
-@login_required
-def apply_coupon(request):
-    code = request.POST.get('coupon_code')
-    if code == 'DISCOUNT10':
-        request.session['discount'] = 10  # store it in session
-        messages.success(request, "🎉 Coupon applied! 10% discount.")
-    else:
-        messages.error(request, "❌ Invalid coupon code.")
-    return redirect('cart')
+
 
 
 from django.http import JsonResponse
@@ -656,3 +647,183 @@ def ajax_login_required(view_func):
                 return JsonResponse({'status': 'warning', 'message': 'Please log in to perform this action.'})
         return view_func(request, *args, **kwargs)
     return wrapper
+
+
+
+
+from .models import Coupon
+
+
+from django.utils import timezone
+
+
+
+
+def apply_coupon(request):
+    if request.method == "POST":
+        import json
+        data = json.loads(request.body)
+        coupon_code = data.get('coupon_code')
+
+        try:
+            coupon = Coupon.objects.get(coupon_code__iexact=coupon_code, is_used=False)
+            if coupon.expiry_date < timezone.now():
+                return JsonResponse({'success': False, 'message': 'Coupon expired.'})
+
+            total_price = 0
+            cart_items = CartItem.objects.filter(user=request.user)
+            for item in cart_items:
+                total_price += item.product.price * item.quantity
+
+            discount_amount = total_price * (coupon.discount_percentage / 100)
+            new_total = total_price - discount_amount
+
+            return JsonResponse({
+                'success': True,
+                'discount': coupon.discount_percentage,
+                'new_total': round(new_total, 2)
+            })
+        except Coupon.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Invalid or used coupon.'})
+
+    return JsonResponse({'success': False, 'message': 'Invalid request'})
+from .models import Coupon
+
+
+
+
+
+@login_required
+def admin_coupons(request):
+    if not (request.user.is_superuser or request.user.is_staff):
+        return redirect('home')
+    coupons = Coupon.objects.all().order_by('-expiry_date')
+    now = timezone.now()
+    return render(request, 'mytemplates/admin_coupons.html', {'coupons': coupons, 'now': now})
+
+
+def add_coupon(request):
+    if request.method == 'POST':
+        coupon_code = request.POST.get('coupon_code')
+        discount_percentage = request.POST.get('discount_percentage')
+        expiry_date = request.POST.get('expiry_date')
+
+        # Check if coupon code already exists
+        if Coupon.objects.filter(coupon_code__iexact=coupon_code).exists():
+            messages.error(request, 'Coupon code already exists! Please use a different one.')
+            return redirect('add_coupon')
+
+        # Create new coupon
+        coupon = Coupon(
+            coupon_code=coupon_code,
+            discount_percentage=discount_percentage,
+            expiry_date=expiry_date
+        )
+        coupon.save()
+
+        messages.success(request, 'Coupon added successfully!')
+        return redirect('admin_coupons')
+
+    return render(request, 'mytemplates/add_coupon.html')
+
+def edit_coupon(request, coupon_id):
+    coupon = get_object_or_404(Coupon, coupon_id=coupon_id)
+    if request.method == 'POST':
+        coupon.coupon_code = request.POST['coupon_code']
+        coupon.discount_percentage = request.POST['discount_percentage']
+        coupon.expiry_date = request.POST['expiry_date']
+        coupon.save()
+        messages.success(request, 'Coupon updated successfully!')
+        return redirect('admin_coupons')
+
+    return render(request, 'mytemplates/edit_coupon.html', {'coupon': coupon})
+
+
+def delete_coupon(request, coupon_id):
+    coupon = get_object_or_404(Coupon, coupon_id=coupon_id)
+    coupon.delete()
+    messages.success(request, 'Coupon deleted successfully!')
+    return redirect('admin_coupons')
+
+
+
+
+
+
+from django.db.models import Sum
+from django.utils import timezone
+from django.http import HttpResponse
+import csv
+
+@login_required
+def admin_payment_report(request):
+    if not request.user.is_superuser:
+        return redirect('home')
+
+    orders = Order.objects.all()
+
+    # Filtering
+    selected_method = request.GET.get('method')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    if selected_method:
+        orders = orders.filter(payment_method=selected_method)
+    if start_date:
+        orders = orders.filter(order_date__date__gte=start_date)
+    if end_date:
+        orders = orders.filter(order_date__date__lte=end_date)
+
+    esewa_total = orders.filter(payment_method='eSewa').aggregate(Sum('total_price'))['total_price__sum'] or 0
+    cod_total = orders.filter(payment_method='COD').aggregate(Sum('total_price'))['total_price__sum'] or 0
+    total_amount = esewa_total + cod_total
+
+    return render(request, 'mytemplates/admin_payment_report.html', {
+        'orders': orders,
+        'esewa_total': esewa_total,
+        'cod_total': cod_total,
+        'total_amount': total_amount,
+        'selected_method': selected_method,
+        'start_date': start_date,
+        'end_date': end_date,
+    })
+
+
+@login_required
+def export_admin_payment_report(request):
+    if not request.user.is_superuser:
+        return redirect('home')
+
+    orders = Order.objects.all()
+
+    # Apply same filtering here too
+    selected_method = request.GET.get('method')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    if selected_method:
+        orders = orders.filter(payment_method=selected_method)
+    if start_date:
+        orders = orders.filter(order_date__date__gte=start_date)
+    if end_date:
+        orders = orders.filter(order_date__date__lte=end_date)
+
+    # Create CSV
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="admin_payment_report.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Order ID', 'Product', 'Customer', 'Amount (Rs)', 'Payment Method', 'Status', 'Order Date'])
+
+    for order in orders:
+        writer.writerow([
+            order.id,
+            order.product.product_name,
+            order.user.username,
+            order.total_price,
+            order.payment_method,
+            order.status,
+            order.order_date.strftime('%Y-%m-%d'),
+        ])
+
+    return response
