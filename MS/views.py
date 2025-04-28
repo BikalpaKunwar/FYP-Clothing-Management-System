@@ -320,7 +320,7 @@ def remove_wishlist_item(request, item_id):
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from .models import Product, Order
+from .models import Product, Order, CartItem
 
 @login_required
 def buy_now_checkout(request):
@@ -332,7 +332,7 @@ def buy_now_checkout(request):
             name = request.POST.get('name')
             phone = request.POST.get('phone')
             address = request.POST.get('address')
-            payment_method = request.POST.get('payment_method')
+            payment_method = request.POST.get('payment_method')  # ✅ captured
 
             # Limit quantity to 5
             if quantity > 5:
@@ -347,21 +347,22 @@ def buy_now_checkout(request):
 
             # Ensure there's enough stock
             if product.quantity >= quantity:
-                product.quantity -= quantity  # Decrease the quantity
-                product.save()  # Save the updated product quantity
+                product.quantity -= quantity
+                product.save()
             else:
                 messages.error(request, f"Not enough stock for {product.product_name}.")
                 return redirect('product')
 
             total_price = product.price * quantity
 
-            # Create the order
+            # ✅ Create the order and SAVE payment method also
             Order.objects.create(
-                user=request.user,              # ✅ FK to authenticated user
+                user=request.user,
                 product=product,
                 quantity=quantity,
                 total_price=total_price,
                 status='pending',
+                payment_method=payment_method,  # ✅ added here
             )
 
             messages.success(request, "Order placed successfully!")
@@ -406,7 +407,7 @@ def checkout(request):
         name = request.POST.get("name")
         phone = request.POST.get("phone")
         address = request.POST.get("address")
-        payment_method = request.POST.get("payment_method")
+        payment_method = request.POST.get("payment_method")  # ✅ captured
 
         cart_items = CartItem.objects.filter(user=request.user)
         if not cart_items.exists():
@@ -414,41 +415,41 @@ def checkout(request):
             return redirect('cart')
 
         for item in cart_items:
-            # Fetch the quantity for each cart item dynamically from the form
             quantity = request.POST.get(f"quantity_{item.id}")
             if quantity is None or quantity == '':
-                quantity = 1  # Default to 1 if quantity is not provided or invalid
+                quantity = 1
             else:
                 try:
                     quantity = int(quantity)
                     if quantity < 1:
                         raise ValueError("Quantity must be at least 1.")
-                    if quantity > 5:  # Limit to a maximum of 5 units per product
+                    if quantity > 5:
                         messages.error(request, f"You cannot order more than 5 units of {item.product.product_name}.")
                         return redirect('cart')
                 except ValueError:
                     messages.error(request, f"Invalid quantity for {item.product.product_name}")
                     return redirect('cart')
 
-            # Create the order with the correct quantity
+            # ✅ Create the order and SAVE payment method also
             Order.objects.create(
                 user=request.user,
                 product=item.product,
                 quantity=quantity,
                 total_price=item.product.price * quantity,
-                status='pending'
+                status='pending',
+                payment_method=payment_method,  # ✅ added here
             )
 
             # Decrease the product's quantity after purchase
             product = item.product
             if product.quantity >= quantity:
                 product.quantity -= quantity
-                product.save()  # Save the updated product quantity
+                product.save()
             else:
                 messages.error(request, f"Not enough stock for {product.product_name}.")
                 return redirect('cart')
 
-        cart_items.delete()  # Clear the cart after placing the order
+        cart_items.delete()
         messages.success(request, "Your order has been placed successfully!")
         return redirect('user_orders')
 
@@ -755,12 +756,18 @@ from django.utils import timezone
 from django.http import HttpResponse
 import csv
 
+from django.db.models import Sum
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from .models import Order
+
 @login_required
 def admin_payment_report(request):
     if not request.user.is_superuser:
         return redirect('home')
 
-    orders = Order.objects.all()
+    # ✅ Latest orders first (NEW)
+    orders = Order.objects.all().order_by('-order_date')
 
     # Filtering
     selected_method = request.GET.get('method')
@@ -789,6 +796,12 @@ def admin_payment_report(request):
     })
 
 
+
+import csv
+from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
+from .models import Order
+
 @login_required
 def export_admin_payment_report(request):
     if not request.user.is_superuser:
@@ -796,7 +809,7 @@ def export_admin_payment_report(request):
 
     orders = Order.objects.all()
 
-    # Apply same filtering here too
+    # Apply same filtering
     selected_method = request.GET.get('method')
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
@@ -813,11 +826,12 @@ def export_admin_payment_report(request):
     response['Content-Disposition'] = 'attachment; filename="admin_payment_report.csv"'
 
     writer = csv.writer(response)
-    writer.writerow(['Order ID', 'Product', 'Customer', 'Amount (Rs)', 'Payment Method', 'Status', 'Order Date'])
+    writer.writerow(['SN', 'Product', 'Customer', 'Amount (Rs)', 'Payment Method', 'Status', 'Order Date'])
 
-    for order in orders:
+    # Serial number counter
+    for idx, order in enumerate(orders, start=1):
         writer.writerow([
-            order.id,
+            idx,  # << ✅ Here serial number
             order.product.product_name,
             order.user.username,
             order.total_price,

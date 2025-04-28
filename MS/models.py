@@ -72,12 +72,19 @@ class Order(models.Model):
         ('delivered', 'Delivered'),
         ('cancelled', 'Cancelled')
     ], default='pending')
-    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='COD')  # ✅ Added here
+
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PAYMENT_METHOD_CHOICES,
+        default='COD'  # ✅ Default is Cash on Delivery if not chosen
+    )
+
     order_date = models.DateTimeField(auto_now_add=True)
     delivery_date = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"Order {self.order_id} - {self.product.product_name}"
+
 
 
 
